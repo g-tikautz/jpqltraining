@@ -1,0 +1,31 @@
+POST http://localhost:8081/api/addPenalty/2?amount=99&date=1990-11-02
+Content-Type: application/json
+
+###
+
+DELETE http://localhost:8081/api/deletePenalty/3
+Accept: application/json
+
+###
+PUT  http://localhost:8081/api/changePenaltyAmount/3?amount=20
+Content-Type: application/json
+
+###
+
+GET http://localhost:8081/api/getPlayersByGenderAndAge?sex=false&year=1960
+Accept: application/json
+
+###
+
+GET http://localhost:8081/api/getPenaltiesInDateRange?start=1960-01-01&end=1990-10-01
+Accept: application/json
+
+###
+GET http://localhost:8081/api/players
+Accept: application/json
+
+###
+GET http://localhost:8081/api/playersLivingIntown/Stratford
+Accept: application/json
+
+###

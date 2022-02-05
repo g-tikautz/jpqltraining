@@ -10,13 +10,11 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
-import javax.validation.constraints.Min;
+import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class Repository {
@@ -25,7 +23,7 @@ public class Repository {
     private EntityManager em;
 
     public List<Player> getAllPlayers() {
-        return Collections.emptyList();
+        return em.createQuery("Select p from Player p", Player.class).getResultList();
     }
 
     /**
@@ -34,7 +32,9 @@ public class Repository {
      * @param town name of the town
      */
     public List<Player> getPlayersLivingInTown(String town) {
-        return Collections.emptyList();
+        TypedQuery<Player> query = em.createQuery("Select p from Player p where p.town = :town", Player.class);
+        query.setParameter("town", town);
+        return query.getResultList();
     }
 
     /**
@@ -44,7 +44,10 @@ public class Repository {
      * @param bornBeforeYear the exclusive year before someone has to be born
      */
     public List<Player> getPlayersByGenderAndAge(boolean female, int bornBeforeYear) {
-        return Collections.emptyList();
+        TypedQuery<Player> query = em.createQuery("Select p from Player p where p.yearOfBirth < :bornBeforeYear and p.sex = :sex", Player.class);
+        query.setParameter("bornBeforeYear", bornBeforeYear);
+        query.setParameter("sex", female ? 'F' : 'M');
+        return query.getResultList();
     }
 
     /**
@@ -54,7 +57,10 @@ public class Repository {
      * @param end   the second (later) date, inclusive
      */
     public List<Penalty> getPenaltiesInDateRange(LocalDate start, LocalDate end) {
-        return Collections.emptyList();
+        TypedQuery<Penalty> q = em.createQuery("SELECT p from Penalty p where p.penDate < :end and p.penDate > :start", Penalty.class);
+        q.setParameter("end", end);
+        q.setParameter("start", start);
+        return q.getResultList();
     }
 
     /**
@@ -62,6 +68,52 @@ public class Repository {
      */
     public List<Penalty> getPenaltiesWithAmountHigherEqualThan(BigDecimal amount) {
         return Collections.emptyList();
+    }
+
+    /**
+     * add Penalty to Player
+     *
+     * @param playerNo
+     * @param penDate
+     * @param amount
+     */
+
+    @Transactional
+    public void addNewPenaltyForPlayer(Long playerNo, LocalDate penDate, BigDecimal amount) {
+        Player p = em.find(Player.class,playerNo);
+
+        TypedQuery<Penalty> q2 = em.createQuery("select p from Penalty p order by p.paymentNo desc",Penalty.class);
+        long paymentNoN = q2.getResultList().get(0).getPaymentNo() + 1 ;
+
+        Penalty pen = new Penalty();
+
+        pen.setPaymentNo(paymentNoN);
+        pen.setPenDate(penDate);
+        pen.setAmount(amount);
+        pen.setPlayer(p);
+
+        p.getPenalties().add(pen);
+
+        em.persist(pen);
+
+    }
+
+    @Transactional
+    public void changePenaltyAmount(long paymentNo, BigDecimal amount){
+        Penalty p = em.find(Penalty.class,paymentNo);
+        p.setAmount(amount);
+    }
+
+    @Transactional
+    public Penalty deletePenalty(long paymentNo){
+        Penalty pen = em.find(Penalty.class,paymentNo);
+
+        pen.getPlayer().getPenalties().remove(pen);
+
+        em.remove(pen);
+
+
+        return pen;
     }
 
     /**
@@ -80,15 +132,14 @@ public class Repository {
 
     /**
      * Returns all player numbers who have received a penalty so far
-     *
      */
     public List<Long> getPlayerNosWithPenalty() {
+
         return Collections.emptyList();
     }
 
     /**
      * Returns all players who have received a penalty so far
-     *
      */
     public List<Player> getPlayersWithPenalty() {
         return Collections.emptyList();
@@ -124,7 +175,7 @@ public class Repository {
      */
     public List<PlayerPenalties> getPenaltiesForAllPlayers() {
 //        @SuppressWarnings("JpaQlInspection") // IntelliJ thinks coalesce returns an int while it's actually a BigDecimal
-        return Collections.emptyList();
+        return em.createQuery("SELECT NEW at.htl.results.PlayerPenalties(p, SUM(pen.amount)) from Player p left join p.penalties pen group by p",PlayerPenalties.class).getResultList();
     }
 
 
